@@ -15,6 +15,10 @@ pydantic>=2.0.0
 streamlit>=1.28.0
 requests>=2.31.0
 
+# Utilidades - INSTALADAS ✓
+python-dotenv>=1.1.0
+boto3>=1.40.0
+
 # Machine Learning básico (instalar cuando sea necesario)
 # scikit-learn>=1.3.0
 # joblib>=1.3.0
