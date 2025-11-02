@@ -105,6 +105,17 @@ Notas:
 - Los volúmenes montan `./models` y `./data` dentro de los contenedores (`/app/models`, `/app/data`).
 - Healthchecks validan que cada servicio esté listo antes de exponerlo.
 
+### Variables de entorno útiles
+- API (servicio `api`):
+    - `MODEL_PATH`: ruta al artefacto del modelo o pipeline (por ejemplo, `/app/models/pipeline.joblib`).
+    - `PREPROCESSOR_PATH`: ruta al preprocesador si el modelo no lo incluye.
+    - `API_HOST`, `API_PORT`, `API_DEBUG` (ya preconfigurados para Docker).
+- Frontend (servicio `frontend`):
+    - `API_BASE_URL`: URL de la API dentro de la red de Docker (`http://api:8000`).
+    - `USE_BACKEND`: `true` para consultar la API real.
+
+Puedes añadir estas variables bajo `environment:` en `docker-compose.yml` o usar un archivo `.env`.
+
 ## ✅ Checklist de reproducibilidad
 
 - [x] requirements.txt actualizado (incluye xlrd==1.2.0, sklearn, xgboost, lightgbm, catboost, scipy, etc.)

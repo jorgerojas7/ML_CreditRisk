@@ -1,52 +1,75 @@
 # -*- coding: utf-8 -*-
 """
-Script para hacer predicciones con el modelo entrenado de riesgo crediticio.
+Predicción de riesgo crediticio: carga de artefactos y scoring.
+
+Soporta dos formas de despliegue:
+1) Pipeline único serializado (recomendado): MODEL_PATH apunta a un .joblib/.pkl
+    que contiene un sklearn.Pipeline con preprocesamiento + modelo.
+2) Artefactos separados (opcional): PREPROCESSOR_PATH y MODEL_PATH; se arma
+    un Pipeline en memoria con ('preprocessor', ...) y ('model', ...).
 """
+import os
 import logging
-# import joblib  # Instalar cuando sea necesario
+import joblib
 import pandas as pd
 import numpy as np
 from pathlib import Path
-from typing import Union, List, Dict, Any
-
-# Función temporal para joblib
-def joblib_load(filename):
-    """Función temporal - reemplazar con joblib.load cuando esté instalado"""
-    return None  # Retorna modelo dummy
+from typing import Dict, Any, Optional
+from sklearn.pipeline import Pipeline
 
 class CreditRiskPredictor:
     """Clase para hacer predicciones de riesgo crediticio."""
-    
-    def __init__(self, model_path: str = "models/best_model.pkl"):
+
+    def __init__(
+        self,
+        model_path: Optional[str] = None,
+        preprocessor_path: Optional[str] = None,
+    ):
         """
         Inicializa el predictor.
-        
+
         Args:
-            model_path: Ruta al modelo entrenado
+            model_path: Ruta al modelo o pipeline serializado
+            preprocessor_path: Ruta al preprocesador (si no está incluido en el pipeline)
         """
-        self.model = None
-        self.model_path = model_path
+        self.model: Optional[Pipeline] = None
+        self.model_path = model_path or os.getenv("MODEL_PATH", "models/best_model.pkl")
+        self.preprocessor_path = preprocessor_path or os.getenv("PREPROCESSOR_PATH")
         self.feature_names = []
         self.load_model()
         
     def load_model(self) -> None:
-        """Carga el modelo entrenado desde disco."""
+        """Carga el modelo/pipeline desde disco; arma pipeline si hay preprocesador separado."""
         logger = logging.getLogger(__name__)
-        
+
+        # Verificar existencia
+        model_path = Path(self.model_path)
+        if not model_path.exists():
+            logger.error(f"Modelo no encontrado en: {model_path}")
+            raise FileNotFoundError(f"Modelo no encontrado: {model_path}")
+
+        # Cargar artefactos
+        model_obj = joblib.load(model_path)
+
+        if self.preprocessor_path:
+            prep_path = Path(self.preprocessor_path)
+            if not prep_path.exists():
+                logger.error(f"Preprocesador no encontrado en: {prep_path}")
+                raise FileNotFoundError(f"Preprocesador no encontrado: {prep_path}")
+            preprocessor = joblib.load(prep_path)
+            self.model = Pipeline(steps=[("preprocessor", preprocessor), ("model", model_obj)])
+            logger.info(f"Pipeline armado en memoria con preprocesador + modelo.")
+        else:
+            # Si ya es un Pipeline, usarlo directamente; si es un estimador, igualmente se usará (asume features ya preprocesadas)
+            self.model = model_obj
+            logger.info(f"Modelo/pipeline cargado desde: {model_path}")
+
+        # Intentar obtener nombres de features si está disponible
         try:
-            self.model = joblib_load(self.model_path)
-            logger.info(f"Modelo cargado desde: {self.model_path}")
-            
-            # Intentar obtener nombres de features si está disponible
-            if hasattr(self.model, 'feature_names_in_'):
-                self.feature_names = self.model.feature_names_in_.tolist()
-            
-        except FileNotFoundError:
-            logger.error(f"Modelo no encontrado en: {self.model_path}")
-            raise
-        except Exception as e:
-            logger.error(f"Error al cargar modelo: {str(e)}")
-            raise
+            if hasattr(self.model, "feature_names_in_"):
+                self.feature_names = list(self.model.feature_names_in_)
+        except Exception:
+            pass
             
     def predict_single(self, features: Dict[str, Any]) -> Dict[str, Any]:
         """
@@ -65,13 +88,21 @@ class CreditRiskPredictor:
         
         # Hacer predicción
         prediction = self.model.predict(df)[0]
-        probabilities = self.model.predict_proba(df)[0]
+        # Algunos modelos pueden no tener predict_proba
+        if hasattr(self.model, "predict_proba"):
+            probabilities = self.model.predict_proba(df)[0]
+            p1 = float(probabilities[1]) if len(probabilities) > 1 else float(probabilities[0])
+            conf = float(max(probabilities))
+        else:
+            # Fallback: usar decisión como score binario
+            p1 = float(prediction)
+            conf = 1.0
         
         result = {
             'prediction': int(prediction),
-            'risk_score': float(probabilities[1]),  # Probabilidad de default
-            'risk_level': self._get_risk_level(probabilities[1]),
-            'confidence': float(max(probabilities))
+            'risk_score': p1,  # Probabilidad de default (o aproximación)
+            'risk_level': self._get_risk_level(p1),
+            'confidence': conf
         }
         
         logger.info(f"Predicción realizada: {result}")
@@ -80,27 +111,34 @@ class CreditRiskPredictor:
     def predict_batch(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Hace predicciones para un lote de perfiles.
-        
+
         Args:
             df: DataFrame con perfiles a evaluar
-            
+
         Returns:
             DataFrame con predicciones agregadas
         """
         logger = logging.getLogger(__name__)
         logger.info(f"Realizando predicciones en lote para {len(df)} perfiles")
-        
+
         # Hacer predicciones
         predictions = self.model.predict(df)
-        probabilities = self.model.predict_proba(df)
-        
+        has_proba = hasattr(self.model, "predict_proba")
+        probabilities = self.model.predict_proba(df) if has_proba else None
+
         # Crear DataFrame de resultados
         results_df = df.copy()
         results_df['prediction'] = predictions
-        results_df['risk_score'] = probabilities[:, 1]
-        results_df['risk_level'] = [self._get_risk_level(score) for score in probabilities[:, 1]]
-        results_df['confidence'] = np.max(probabilities, axis=1)
-        
+        if has_proba and probabilities is not None:
+            p1 = probabilities[:, 1] if probabilities.shape[1] > 1 else probabilities[:, 0]
+            results_df['risk_score'] = p1
+            results_df['risk_level'] = [self._get_risk_level(score) for score in p1]
+            results_df['confidence'] = np.max(probabilities, axis=1)
+        else:
+            results_df['risk_score'] = predictions.astype(float)
+            results_df['risk_level'] = [self._get_risk_level(float(p)) for p in results_df['risk_score']]
+            results_df['confidence'] = 1.0
+
         logger.info("Predicciones en lote completadas")
         return results_df
         

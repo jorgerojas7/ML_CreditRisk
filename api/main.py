@@ -98,7 +98,11 @@ def get_predictor():
     global predictor
     if predictor is None:
         try:
-            predictor = CreditRiskPredictor()
+            # Permitir configurar rutas vía variables de entorno
+            import os
+            model_path = os.getenv("MODEL_PATH")
+            preprocessor_path = os.getenv("PREPROCESSOR_PATH")
+            predictor = CreditRiskPredictor(model_path=model_path, preprocessor_path=preprocessor_path)
             logger.info("Predictor inicializado exitosamente")
         except Exception as e:
             logger.error(f"Error inicializando predictor: {e}")
