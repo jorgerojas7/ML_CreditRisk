@@ -1,183 +1,125 @@
 # ML Credit Risk Analysis
 
-Este proyecto genera un servicio API respaldado por modelos de machine learning que puede predecir puntuaciones de riesgo crediticio basándose en perfiles financieros.
+> Predicción de riesgo crediticio con pipelines reproducibles, importancia de variables y flujo de scoring/visualización. Incluye API/Frontend opcional para demo.
 
-## Objetivo del Proyecto
+## 📦 Componentes principales
 
-Crear un servicio capaz de predecir las puntuaciones crediticias de las personas basándose en información de transacciones financieras, incluyendo simulaciones para evaluar la rentabilidad del modelo en un entorno real.
+- `ml_creditrisk/` (paquete Python):
+    - `feature_grouping.py`: utilidades para agrupar variables y auditar Missing%.
+    - `preprocessing.py`: ColumnTransformer desde grupos (imputación, winsor, OHE, target-encoding) y discretizador robusto por cuantiles.
+    - `importance.py`: entrenamiento XGBoost + agregado de importancias a variables originales, filtrado por umbral y plotting.
+    - `models.py`: modelos base (RF, XGBoost, LightGBM, CatBoost) + evaluador y pipeline “GB leaves → OneHot → LR”.
+- `notebooks/02_Feature_Engineering_Modelado.ipynb`: orquesta el flujo E2E (carga → grupos → preprocesamiento → importancia → modelos → predicciones → gráficos).
+- `api/` y `frontend/`: demo opcional con FastAPI/Streamlit (no requerida para el notebook).
 
-## Arquitectura del Sistema
+## 🧰 Requisitos y entorno
 
-El proyecto utiliza una arquitectura modular con dos componentes principales:
+- Python 3.10 recomendado (Windows soportado)
+- Instalar dependencias:
 
-### 🔧 **Backend - FastAPI**
-- **API REST** para predicciones de riesgo crediticio
-- **Endpoints especializados** para análisis individual, por lotes y simulaciones
-- **Validación de datos** con Pydantic
-- **Documentación automática** con OpenAPI/Swagger
-
-### 🎨 **Frontend - Streamlit**
-- **Dashboard interactivo** para análisis exploratorio de datos
-- **Interfaz de predicción** para casos individuales y por lotes
-- **Visualizaciones dinámicas** con Plotly
-- **Simulación de escenarios** de negocio
-
-### 📊 **Dataset**
-- **PAKDD 2010 Credit Risk Competition** - Datos reales de riesgo crediticio
-- **Variables financieras** y demográficas de clientes
-- **Target binario** para clasificación de riesgo
-
-## Estructura del Proyecto
-
-```
-├── README.md          <- Descripción principal del proyecto
-├── data/
-│   ├── external/      <- Datos de fuentes externas
-│   ├── interim/       <- Datos intermedios transformados
-│   ├── processed/     <- Conjuntos de datos finales y canónicos
-│   └── raw/           <- Datos originales sin modificar
-│
-├── docs/              <- Documentación del proyecto
-│
-├── models/            <- Modelos entrenados y serializados, predicciones
-│
-├── notebooks/         <- Jupyter notebooks para EDA y experimentación
-│
-├── references/        <- Diccionarios de datos, manuales y materiales explicativos
-│
-├── reports/           <- Análisis generados como HTML, PDF, LaTeX, etc.
-│   └── figures/       <- Gráficos y figuras para usar en reportes
-│
-├── requirements.txt   <- Dependencias para reproducir el entorno de análisis
-│
-├── setup.py          <- Hace que el proyecto sea instalable con pip (pip install -e .)
-│
-├── src/              <- Código fuente para uso en este proyecto
-│   ├── __init__.py   <- Hace que src sea un módulo Python
-│   │
-│   ├── data/         <- Scripts para descargar o generar datos
-│   │   └── make_dataset.py
-│   │
-│   ├── features/     <- Scripts para convertir datos raw en features para modeling
-│   │   └── build_features.py
-│   │
-│   ├── models/       <- Scripts para entrenar modelos y hacer predicciones
-│   │   ├── predict_model.py
-│   │   └── train_model.py
-│   │
-│   └── visualization/ <- Scripts para crear visualizaciones exploratorias y de resultados
-│       └── visualize.py
-│
-├── api/              <- API FastAPI para el servicio backend
-│   ├── main.py       <- Aplicación principal de la API
-│   ├── models.py     <- Modelos Pydantic para request/response
-│   └── routers/      <- Endpoints organizados por funcionalidad
-│
-├── frontend/         <- Aplicación Streamlit para interfaz web interactiva
-│   ├── streamlit_app.py <- Aplicación principal de Streamlit
-│   └── utils.py      <- Utilidades y funciones auxiliares para el frontend
-│
-├── tests/            <- Tests unitarios y de integración
-│   └── test_api.py   <- Tests para los endpoints de la API
-│
-└── deployment/       <- Archivos Docker y configuración para deployment
-    ├── Dockerfile
-    └── docker-compose.yml
-```
-
-## Entregables Principales
-
-1. **Análisis exploratorio de datos (EDA)** - Notebooks Jupyter y datasets
-2. **Scripts de preprocesamiento** - Para preparación de datos
-3. **Scripts de entrenamiento y modelos entrenados** - Con documentación de reproducibilidad
-4. **Modelo de predicción de puntuación crediticia**
-5. **Simulación del modelo** - Con documentación de resultados y proceso
-6. **API con interfaz de usuario** - Para demostraciones
-7. **Dockerización completa** - Lista para deployment
-
-## Entregables Opcionales
-
-- Autenticación basada en tokens
-- Re-entrenamiento online con nuevos datos
-- Tests adicionales de API
-
-## Configuración del Entorno
-
-**Requisitos:** Python 3.10 o superior
-
-```bash
-# Crear entorno virtual
+```powershell
 python -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
-
-# Instalar dependencias básicas (ya instaladas ✅)
+venv\Scripts\Activate.ps1
 pip install -r requirements.txt
-
-# Instalar el proyecto en modo desarrollo
 pip install -e .
 ```
 
-### 📦 **Dependencias Actuales**
-- ✅ **Instaladas**: pandas, numpy, plotly, fastapi, uvicorn, streamlit, requests
-- 🔄 **Opcionales**: scikit-learn, matplotlib, seaborn (se instalarán según necesidad)
-- 🚀 **ML Avanzado**: lightgbm, xgboost, catboost (para modelos avanzados)
+Notas:
+- Para leer el archivo .XLS del dataset se fija xlrd==1.2.0 (las versiones ≥2.0 ya no soportan .xls).
+- LightGBM y CatBoost están incluidos en requirements y se usan si están instalados.
 
-### 🗂️ **Datos del Proyecto**
-- **Dataset**: PAKDD 2010 Credit Risk Competition
-- **Ubicación**: `data/raw/` (ya copiados ✅)
-- **Formato**: Archivos .txt con datos tabulares
+## 🗂️ Datos
 
-## Uso Rápido
+- Ubicación: `data/raw/`
+- Archivos esperados:
+    - `PAKDD2010_VariablesList.XLS` (nombres de columnas)
+    - `PAKDD2010_Modeling_Data.txt` (modelado)
+    - `PAKDD2010_Prediction_Data.txt` (scoring)
 
-### 📈 **Análisis Exploratorio**
-```bash
-# Abrir notebook de EDA
-jupyter notebook notebooks/01_EDA_PAKDD2010.ipynb
-```
+## 🧪 Uso del notebook principal
 
-### 🤖 **Entrenamiento del Modelo**
-```bash
-# Entrenar modelos (cuando sklearn esté instalado)
-python src/models/train_model.py
-```
+1) Abrir `notebooks/02_Feature_Engineering_Modelado.ipynb` y ejecutar en orden:
+     - Celda 1: carga de datos.
+     - Celda 2: agrupación de variables, exclusiones y DataFrame FINAL (auditable).
+     - Celda 3: construcción del preprocesador y resumen de columnas generadas.
+     - Celda 4: importancia con XGBoost; umbral configurable; crea `preprocessor_filtered` con variables ≥ umbral (por defecto 0.02 en el cuaderno; se puede ajustar).
+     - Celda 5: entrenamiento y evaluación de modelos activos (RF, XGBoost, LightGBM, CatBoost).
+     - Celda 6: predicciones sobre `Prediction_Data.txt` y columnas `score_*` en `df_pred`.
+     - Celda 7: histogramas de scores por modelo.
 
-### 🚀 **Ejecutar Servicios**
+2) Búsqueda de hiperparámetros (RandomizedSearchCV):
+     - La celda de HPO incluye un flag `HPO_ENABLED = False` para evitar ejecuciones largas. Cambiar a `True` para activar.
+     - Los mejores pipelines quedan en `tuned_models`.
+     - En la celda de predicciones, `USE_TUNED_MODELS = False` por defecto. Cambiar a `True` para usar `tuned_models` si existen.
 
-**Backend API (FastAPI):**
-```bash
+## 🤖 Modelos incluidos
+
+- Random Forest (scikit-learn)
+- XGBoost (xgboost)
+- LightGBM (lightgbm) – opcional si instalado
+- CatBoost (catboost) – opcional si instalado
+- (Opcional) GB leaves → OneHot → LR (útil para calibración y capturar interacciones de árboles)
+
+## 🧩 Diseño del preprocesamiento
+
+- Numéricas reales: imputación (−1) → winsor (cuantiles) → robust scaler
+- Numéricas con prioridad (AGE, MONTHS_IN_THE_JOB): discretización por cuantiles (robusta)
+- Categóricas baja cardinalidad y binarias: OneHotEncoder
+- Categóricas alta cardinalidad: TargetEncoder (smoothing=0.3)
+- Todas las decisiones dependen de `df_groups_final` como “single source of truth”.
+
+## � Importancia y filtrado
+
+- Importancias por feature output se agregan a variables raw originales.
+- Se construye `preprocessor_filtered` con variables ≥ umbral.
+- Tabla de variables eliminadas incluida para auditoría.
+
+## ▶️ API / Frontend (opcional)
+
+Para demo rápida (cuando quieras mostrar un servicio):
+
+```powershell
 uvicorn api.main:app --reload --port 8000
-# Documentación: http://localhost:8000/docs
-```
+# Docs: http://localhost:8000/docs
 
-**Frontend Dashboard (Streamlit):**
-```bash
 streamlit run frontend/streamlit_app.py --server.port 8501
-# Aplicación: http://localhost:8501
+# App: http://localhost:8501
 ```
 
-**Docker (Servicios completos):**
-```bash
-docker-compose up --build
-```
+## ✅ Checklist de reproducibilidad
 
-## Hitos del Proyecto
+- [x] requirements.txt actualizado (incluye xlrd==1.2.0, sklearn, xgboost, lightgbm, catboost, scipy, etc.)
+- [x] Paquete `ml_creditrisk` con docstrings y funciones reutilizables
+- [x] Notebook principal orquestando el flujo E2E
+- [x] Flags para activar/desactivar HPO y usar modelos tuneados
 
-- [x] Configurar repositorio y estructura
-- [ ] Descarga y evaluación del dataset
-- [ ] Normalización de datos y EDA
-- [ ] Creación de dataset de entrenamiento
-- [ ] Entrenamiento de modelos clasificadores
-- [ ] Evaluación y selección del mejor modelo
-- [ ] Configuración de API
-- [ ] Integración de UI básica
-- [ ] Ajuste de modelos adicionales
-- [ ] Tests de API (opcional)
-- [ ] Presentación final
+## � Guardar y usar el preprocesador (.joblib)
 
-## Contribución
+En la última sección del notebook `02_Feature_Engineering_Modelado.ipynb` se incluye una celda para entrenar el preprocesador activo y guardarlo como artefacto reutilizable.
 
-Por favor, revisa las guías de contribución en `docs/` antes de hacer cambios.
+- Qué guarda:
+    - `models/preprocessor_active_<timestamp>.joblib`: el `ColumnTransformer`/`Pipeline` final ajustado sobre el set de entrenamiento.
+    - `models/preprocessor_active_<timestamp>.json`: metadatos (umbral de importancia, tamaños, fecha, hash de columnas, etc.).
 
-## Licencia
+- Cómo cargarlo y usarlo en otro script o sesión:
+  
+    Ejemplo mínimo en Python:
+  
+    1) Cargar el artefacto
+    2) Aplicar `transform` sobre un DataFrame con el mismo esquema de columnas que el de entrenamiento
 
-Este proyecto está bajo la licencia MIT - ver el archivo LICENSE para detalles.
+    Notas:
+    - El artefacto espera las mismas columnas “raw” de entrada que se usaron en el entrenamiento (mismo `df_groups_final`).
+    - Si cambian los grupos o el umbral de importancia, se debe volver a entrenar y guardar un nuevo artefacto.
+
+- Versionado y .gitignore:
+    - Por defecto, `models/*.joblib` y `models/*.json` están ignorados en `.gitignore` para evitar subir artefactos pesados.
+    - Si necesitas versionar un artefacto concreto, puedes:
+        - Forzar el agregado con `git add -f models/preprocessor_active_YYYYMMDD_HHMMSS.joblib` y su `.json`, o
+        - Quitar/ajustar la regla de `.gitignore` para `models/*`.
+
+Sugerencia: mantén un naming consistente y documenta en el metadato el dataset y los flags utilizados (por ejemplo, `IMPORTANCE_THRESHOLD`).
+
+## �📄 Licencia
+
+MIT (ver archivo LICENSE si aplica).
