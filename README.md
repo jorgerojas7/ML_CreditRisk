@@ -163,6 +163,55 @@ Puedes añadir estas variables bajo `environment:` en `docker-compose.yml` o usa
      ```
 4. Valida `/health`, `/model/info` y una predicción simple.
 
+## 🛠️ Troubleshooting (solución de problemas)
+
+Estos son los errores más comunes y cómo resolverlos rápidamente.
+
+1) Error 422 Unprocessable Entity en `/predict`
+- Síntomas: la app muestra “API Error: 422 …” o el detalle pide campos faltantes.
+- Causa: el payload no cumple el esquema del endpoint (faltan campos o nombres distintos).
+- Solución: asegúrate de enviar exactamente estos 5 campos: `income` (float), `age` (int), `credit_amount` (float), `employment_length` (int), `debt_ratio` (float). La UI ya lo mapea automáticamente; si pruebas con herramientas externas, respeta el esquema.
+
+2) FileNotFoundError con `cities.csv`
+- Síntomas: traza en `frontend/credit_form_interface.py` al leer `cities.csv`.
+- Causa: archivo ausente o ruta local no válida en el contenedor.
+- Solución: coloca el archivo en `data/raw/cities.csv` (se monta en `/app/data/raw/cities.csv`) o define `CITIES_CSV_PATH`. Si no existe el archivo, la UI hace fallback a siglas de estados y ciudades como texto (no se rompe).
+
+3) “Invalid credentials” al hacer login
+- Síntomas: el login falla siempre.
+- Causas: (a) `USE_BACKEND=true` pero el endpoint `/login` no está en la imagen en ejecución (falta rebuild); (b) credenciales distintas a las de demo; (c) API no alcanzable.
+- Solución: rebuild de API/Frontend, usar usuarios de demo `admin/admin123` o `analyst/analyst456`, verificar `/openapi.json` incluye `/login` y que `API_BASE_URL` apunte a la API (en Compose: `http://api:8000`).
+
+4) Modelo no cargado / `/model/info` falla
+- Síntomas: `/health` indica `model_loaded: false` o el endpoint de predicción falla.
+- Causa: `MODEL_PATH` o `PREPROCESSOR_PATH` apuntan a rutas inexistentes.
+- Solución: copia el artefacto real a `./models`, actualiza `MODEL_PATH` en `docker-compose.yml` (por ejemplo, `/app/models/pipeline_real.joblib`) y reconstruye.
+
+5) Simulación con `approved_applications=0` o ROI negativa
+- Causa: con el pipeline “dummy” los `risk_score` ≈ 0.5; si el umbral es muy estricto, no hay aprobados; además con `profit_margin` 0.05 y `risk_score` 0.5, la pérdida esperada puede superar la ganancia.
+- Solución: ajusta el slider `decision_threshold` (la regla es `score <= threshold`) y/o `profit_margin`, o usa tu modelo real para scores más informativos.
+
+6) El Frontend no conecta con la API
+- Síntomas: “API Error … conexión” o métricas que no cargan.
+- Causa: `API_BASE_URL` incorrecto. Dentro de Docker Compose debe ser `http://api:8000`; en local, `http://localhost:8000`.
+- Solución: verifica variables de entorno y reconstruye si cambiaste el compose.
+
+7) Puertos en uso (8000/8501)
+- Síntomas: Docker no puede publicar puertos.
+- Solución: cierra procesos que usan esos puertos o cambia el mapeo en `docker-compose.yml`.
+
+8) Contenedores “unhealthy”
+- Causa: healthcheck falla por API caída o Frontend sin levantar.
+- Solución: revisa logs (`docker compose logs -f api` / `frontend`), valida rutas de modelo/datos, reintenta el build.
+
+9) Batch `/predict/batch` devuelve error
+- Causa: formato incorrecto.
+- Solución: envía `{ "profiles": [ { five fields }, ... ] }` con el mismo esquema de `/predict` por perfil.
+
+10) Lectura de `.xls` falla en el notebook
+- Causa: `xlrd>=2.0` no soporta `.xls`.
+- Solución: usa `xlrd==1.2.0` (ya está en `requirements.txt`).
+
 ## ✅ Checklist de reproducibilidad
 
 - [x] requirements.txt actualizado (incluye xlrd==1.2.0, sklearn, xgboost, lightgbm, catboost, scipy, etc.)
