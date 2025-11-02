@@ -86,6 +86,25 @@ streamlit run frontend/streamlit_app.py --server.port 8501
 # App: http://localhost:8501
 ```
 
+## 🐳 Ejecutar con Docker Compose
+
+Requisitos: Docker Desktop y Docker Compose.
+
+1) Construir y levantar servicios (API + Frontend):
+```powershell
+docker compose up --build
+```
+
+2) URLs:
+- Frontend: http://localhost:8501
+- FastAPI: http://localhost:8000
+- Docs API: http://localhost:8000/docs
+
+Notas:
+- El frontend se conecta a la API vía `API_BASE_URL` (definido en docker-compose como `http://api:8000`).
+- Los volúmenes montan `./models` y `./data` dentro de los contenedores (`/app/models`, `/app/data`).
+- Healthchecks validan que cada servicio esté listo antes de exponerlo.
+
 ## ✅ Checklist de reproducibilidad
 
 - [x] requirements.txt actualizado (incluye xlrd==1.2.0, sklearn, xgboost, lightgbm, catboost, scipy, etc.)

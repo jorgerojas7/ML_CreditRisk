@@ -1,6 +1,7 @@
 """
 Streamlit User Interface for Credit Risk Analysis System
 """
+import os
 import streamlit as st
 import requests
 import pandas as pd
@@ -8,7 +9,12 @@ import plotly.express as px
 import plotly.graph_objects as go
 from datetime import datetime
 from typing import Dict, Any, List
-from credit_form_interface import create_credit_application_form, create_credit_application_form_m,custom_labels, field_options
+from credit_form_interface import (
+    create_credit_application_form,
+    create_credit_application_form_m,
+    custom_labels,
+    field_options,
+)
 
 st.set_page_config(
     page_title="Credit Risk Analysis",
@@ -16,21 +22,16 @@ st.set_page_config(
     layout="wide",  # 👈 garantiza que ocupe todo el ancho
     initial_sidebar_state="expanded"
 )
-API_BASE_URL = "http://localhost:8000"
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
 # ---------------------------------
 # SIMPLE LOGIN (FRONTEND VISUAL)
 # ---------------------------------
-API_BASE_URL = "http://localhost:8000"  # Dirección del backend
-USE_BACKEND = False  # ⬅️ Cambia a True cuando tu API esté lista
+API_BASE_URL = os.getenv("API_BASE_URL", API_BASE_URL)  # Acepta override por env
+USE_BACKEND = os.getenv("USE_BACKEND", "false").lower() == "true"  # Toggle por env
 
-import streamlit as st
-import requests
-
-# ---------------------------------
-# AUTHENTICATION CONFIG
-# ---------------------------------
-API_BASE_URL = "http://localhost:8000"  # Dirección del backend real
-USE_BACKEND = False  # ⬅️ Cambia a True cuando tu API esté lista
+"""
+Las variables API_BASE_URL y USE_BACKEND ya fueron definidas arriba con soporte de env.
+"""
 
 def login_ui():
     # --- Diseño centrado ---
