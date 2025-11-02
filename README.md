@@ -181,3 +181,4 @@ Por favor, revisa las guías de contribución en `docs/` antes de hacer cambios.
 ## Licencia
 
 Este proyecto está bajo la licencia MIT - ver el archivo LICENSE para detalles.
+test
