@@ -68,7 +68,7 @@ Notas:
 - Categóricas alta cardinalidad: TargetEncoder (smoothing=0.3)
 - Todas las decisiones dependen de `df_groups_final` como “single source of truth”.
 
-## � Importancia y filtrado
+## Importancia y filtrado
 
 - Importancias por feature output se agregan a variables raw originales.
 - Se construye `preprocessor_filtered` con variables ≥ umbral.
@@ -93,7 +93,7 @@ streamlit run frontend/streamlit_app.py --server.port 8501
 - [x] Notebook principal orquestando el flujo E2E
 - [x] Flags para activar/desactivar HPO y usar modelos tuneados
 
-## � Guardar y usar el preprocesador (.joblib)
+## Guardar y usar el preprocesador (.joblib)
 
 En la última sección del notebook `02_Feature_Engineering_Modelado.ipynb` se incluye una celda para entrenar el preprocesador activo y guardarlo como artefacto reutilizable.
 
@@ -120,6 +120,6 @@ En la última sección del notebook `02_Feature_Engineering_Modelado.ipynb` se i
 
 Sugerencia: mantén un naming consistente y documenta en el metadato el dataset y los flags utilizados (por ejemplo, `IMPORTANCE_THRESHOLD`).
 
-## �📄 Licencia
+## 📄 Licencia
 
-MIT (ver archivo LICENSE si aplica).
+MIT (ver archivo LICENSE).
