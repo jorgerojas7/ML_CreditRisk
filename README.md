@@ -86,6 +86,26 @@ streamlit run frontend/streamlit_app.py --server.port 8501
 # App: http://localhost:8501
 ```
 
+Autenticación (demo):
+- Usuarios válidos: `admin/admin123` y `analyst/analyst456`.
+- Si `USE_BACKEND=false`, el login se valida localmente en el frontend (modo simulado).
+- Si `USE_BACKEND=true`, el frontend llama a `POST /login` en la API y guarda un `access_token` de sesión (sin autorización estricta para esta demo).
+
+Esquema de entrada del modelo (`POST /predict`):
+- Campos requeridos del JSON:
+    - `income` (float)
+    - `age` (int)
+    - `credit_amount` (float)
+    - `employment_length` (int, en años)
+    - `debt_ratio` (float, 0–1)
+
+La UI de Streamlit mapea automáticamente el formulario de “Credit Application Form (Manual Input)” a estos 5 campos:
+- `income` = `PERSONAL_MONTHLY_INCOME` + `OTHER_INCOMES`
+- `age` = `AGE`
+- `employment_length` = floor(`MONTHS_IN_THE_JOB` / 12)
+- `credit_amount` ≈ 20% de `PERSONAL_ASSETS_VALUE` (si falta, usa 10000)
+- `debt_ratio` ≈ `credit_amount` / (`income`*12 + `PERSONAL_ASSETS_VALUE`) recortado a [0, 0.9]
+
 ## 🐳 Ejecutar con Docker Compose
 
 Requisitos: Docker Desktop y Docker Compose.
@@ -105,6 +125,13 @@ Notas:
 - Los volúmenes montan `./models` y `./data` dentro de los contenedores (`/app/models`, `/app/data`).
 - Healthchecks validan que cada servicio esté listo antes de exponerlo.
 
+Archivos de datos auxiliares (opcional):
+- La UI puede cargar un catálogo de ciudades de Brasil desde `data/raw/cities.csv`. Rutas soportadas automáticamente:
+    - `./data/raw/cities.csv` (host)
+    - `/app/data/raw/cities.csv` (contenedor)
+    - o define `CITIES_CSV_PATH` con la ruta al CSV
+- Si el archivo no existe, la UI hace fallback: Estados por sigla fija y ciudades como texto libre (no falla).
+
 ### Variables de entorno útiles
 - API (servicio `api`):
     - `MODEL_PATH`: ruta al artefacto del modelo o pipeline (por ejemplo, `/app/models/pipeline.joblib`).
@@ -113,8 +140,28 @@ Notas:
 - Frontend (servicio `frontend`):
     - `API_BASE_URL`: URL de la API dentro de la red de Docker (`http://api:8000`).
     - `USE_BACKEND`: `true` para consultar la API real.
+    - `CITIES_CSV_PATH`: ruta al CSV de ciudades (opcional; si no existe, hay fallback seguro).
 
 Puedes añadir estas variables bajo `environment:` en `docker-compose.yml` o usar un archivo `.env`.
+
+### Endpoints principales de la API
+- `POST /login` → autenticación demo (devuelve `access_token` si usuario/clave válidos).
+- `POST /predict` → scoring individual con el esquema de 5 campos indicado arriba.
+- `POST /predict/batch` → scoring por lote (`{"profiles": [ ... ]}`).
+- `POST /simulate` → simulación de decisiones; parámetros:
+    - `profiles`: lista de perfiles con al menos `credit_amount` si quieres métricas monetarias
+    - `decision_threshold` (float, default 0.5): aprueba cuando `risk_score <= threshold`
+    - `profit_margin` (float, default 0.05)
+- `GET /model/info` y `GET /health` → info básica y healthcheck.
+
+### Cambiar al modelo real
+1. Copia tu artefacto entrenado a `./models` (por ejemplo `./models/pipeline_real.joblib`).
+2. Edita `docker-compose.yml` → `MODEL_PATH=/app/models/pipeline_real.joblib` (y opcional `PREPROCESSOR_PATH` si usas artefactos separados).
+3. Reconstruye y levanta:
+     ```powershell
+     docker compose up -d --build
+     ```
+4. Valida `/health`, `/model/info` y una predicción simple.
 
 ## ✅ Checklist de reproducibilidad
 

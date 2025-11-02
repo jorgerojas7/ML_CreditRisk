@@ -159,9 +159,10 @@ class CreditRiskPredictor:
         else:
             return "ALTO"
             
-    def simulate_credit_decisions(self, df: pd.DataFrame, 
-                                credit_amount_col: str = 'credit_amount',
-                                profit_margin: float = 0.05) -> Dict[str, Any]:
+    def simulate_credit_decisions(self, df: pd.DataFrame,
+                                  credit_amount_col: str = 'credit_amount',
+                                  profit_margin: float = 0.05,
+                                  decision_threshold: float = 0.5) -> Dict[str, Any]:
         """
         Simula decisiones de crédito y calcula rentabilidad esperada.
         
@@ -178,12 +179,9 @@ class CreditRiskPredictor:
         
         # Hacer predicciones
         results_df = self.predict_batch(df)
-        
-        # Definir umbral de decisión (puede ser optimizable)
-        decision_threshold = 0.5
-        
-        # Decisiones de crédito
-        results_df['credit_approved'] = results_df['risk_score'] < decision_threshold
+
+        # Decisiones de crédito (aprobación cuando el riesgo es menor o igual al umbral)
+        results_df['credit_approved'] = results_df['risk_score'] <= decision_threshold
         
         # Calcular métricas financieras simuladas
         if credit_amount_col in df.columns:

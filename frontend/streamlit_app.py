@@ -172,6 +172,49 @@ def simulate_credit_decisions(profiles_data: List[Dict[str, Any]], decision_thre
         st.error(f"Simulation failed: {e}")
         return None
 
+def build_model_payload_from_form(form: Dict[str, Any]) -> Dict[str, Any]:
+    """Mapea el formulario completo a los 5 campos requeridos por el modelo.
+
+    - income = PERSONAL_MONTHLY_INCOME + OTHER_INCOMES
+    - age = AGE
+    - employment_length = floor(MONTHS_IN_THE_JOB / 12)
+    - credit_amount ≈ 20% de PERSONAL_ASSETS_VALUE (si falta, 10000)
+    - debt_ratio ≈ credit_amount / (income*12 + assets), recortado a [0, 0.9]
+    """
+    def to_float(x, default=0.0):
+        try:
+            if x is None:
+                return default
+            return float(x)
+        except Exception:
+            return default
+
+    def to_int(x, default=0):
+        try:
+            if x is None:
+                return default
+            return int(float(x))
+        except Exception:
+            return default
+
+    income = to_float(form.get("PERSONAL_MONTHLY_INCOME", 0)) + to_float(form.get("OTHER_INCOMES", 0))
+    age = to_int(form.get("AGE", 30), 30)
+    months_job = to_int(form.get("MONTHS_IN_THE_JOB", 0), 0)
+    employment_length = max(0, months_job // 12)
+    assets = to_float(form.get("PERSONAL_ASSETS_VALUE", 0))
+    credit_amount = max(1000.0, round(assets * 0.2, 2))
+
+    denom = max(1.0, income * 12.0 + assets)
+    debt_ratio = min(0.9, max(0.0, credit_amount / denom))
+
+    return {
+        "income": float(income),
+        "age": int(age),
+        "credit_amount": float(credit_amount),
+        "employment_length": int(employment_length),
+        "debt_ratio": float(debt_ratio),
+    }
+
 def display_risk_result(prediction: Dict[str, Any]):
     """Display risk prediction with correct color and layout."""
     # --- Extract values ---
@@ -295,7 +338,8 @@ def main():
                 else:
                     # Caso normal: consultar modelo
                     with st.spinner("Analyzing credit profile..."):
-                        result = predict_single_profile(profile_data)
+                        model_payload = build_model_payload_from_form(profile_data)
+                        result = predict_single_profile(model_payload)
                     if result:
                         risk_score = result.get("risk_score", 0.5)  # valor entre 0 y 1
                         recommendation = result.get("recommendation", "Review")
@@ -338,7 +382,8 @@ def main():
                 else:
                     # Caso normal: consultar modelo
                     with st.spinner("Analyzing credit profile..."):
-                        result = predict_single_profile(profile_data)
+                        model_payload = build_model_payload_from_form(profile_data)
+                        result = predict_single_profile(model_payload)
                     if result:
                         risk_score = result.get("risk_score", 0.5)  # valor entre 0 y 1
                         recommendation = result.get("recommendation", "Review")

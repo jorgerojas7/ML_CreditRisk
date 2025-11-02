@@ -2,31 +2,49 @@ import streamlit as st
 import pandas as pd
 import os
 import json
+from typing import Optional
+
+UF_MAP = {
+    12: "AC", 27: "AL", 13: "AM", 16: "AP", 29: "BA", 23: "CE",
+    53: "DF", 32: "ES", 52: "GO", 21: "MA", 31: "MG", 50: "MS",
+    51: "MT", 15: "PA", 25: "PB", 26: "PE", 22: "PI", 41: "PR",
+    33: "RJ", 24: "RN", 11: "RO", 14: "RR", 43: "RS", 42: "SC",
+    28: "SE", 35: "SP", 17: "TO"
+}
+
+UF_SIGLAS = sorted(list(set(UF_MAP.values())))
+
 
 @st.cache_data
-def load_brazil_cities():
-    # Ruta local a tu CSV
-    local_path = r"C:\Users\Usuario\Desktop\AnyoneAI\Final Project\ML_CreditRisk\data\raw\cities.csv"
-    df = pd.read_csv(local_path, encoding="utf-8")
+def load_brazil_cities() -> Optional[pd.DataFrame]:
+    """Load Brazilian cities from a CSV if available.
 
-    # Diccionario: codigo_uf → sigla
-    uf_map = {
-        12: "AC", 27: "AL", 13: "AM", 16: "AP", 29: "BA", 23: "CE",
-        53: "DF", 32: "ES", 52: "GO", 21: "MA", 31: "MG", 50: "MS",
-        51: "MT", 15: "PA", 25: "PB", 26: "PE", 22: "PI", 41: "PR",
-        33: "RJ", 24: "RN", 11: "RO", 14: "RR", 43: "RS", 42: "SC",
-        28: "SE", 35: "SP", 17: "TO"
-    }
+    Tries multiple local paths including an env var override (CITIES_CSV_PATH).
+    Returns None when not found so the UI can fallback to text inputs.
+    Expected CSV columns: codigo_uf, nome
+    """
+    env_path = os.getenv("CITIES_CSV_PATH")
+    candidates = [p for p in [
+        env_path,
+        os.path.join(os.getcwd(), "data", "raw", "cities.csv"),
+        os.path.join(os.path.dirname(__file__), "..", "data", "raw", "cities.csv"),
+        "/app/data/raw/cities.csv",
+        "./data/raw/cities.csv",
+    ] if p]
 
-    # Crear columna STATE (siglas)
-    df["STATE"] = df["codigo_uf"].map(uf_map)
-    df = df.rename(columns={"nome": "CITY"})
+    for path in candidates:
+        try:
+            if os.path.exists(path):
+                df = pd.read_csv(path, encoding="utf-8")
+                if "codigo_uf" in df.columns and "nome" in df.columns:
+                    df["STATE"] = df["codigo_uf"].map(UF_MAP)
+                    df = df.rename(columns={"nome": "CITY"})
+                    df = df.dropna(subset=["STATE"])  # safety
+                    return df[["STATE", "CITY"]]
+        except Exception:
+            continue
 
-    # Elimina filas sin sigla (por seguridad)
-    df = df.dropna(subset=["STATE"])
-
-    # Retornar solo columnas relevantes
-    return df[["STATE", "CITY"]]
+    return None
 
 
 custom_labels = {
@@ -255,8 +273,11 @@ def create_credit_application_form_m(custom_labels, field_options):
 
                     # --- ② State dropdowns ---
                     elif field in ["STATE_OF_BIRTH", "RESIDENCIAL_STATE", "PROFESSIONAL_STATE"]:
-                        state_siglas = sorted(cities_df["STATE"].unique())
-                        form_data[field] = st.selectbox(label, state_siglas, key=field)
+                        if cities_df is not None:
+                            state_siglas = sorted(cities_df["STATE"].unique())
+                            form_data[field] = st.selectbox(label, state_siglas, key=field)
+                        else:
+                            form_data[field] = st.selectbox(label, UF_SIGLAS, key=field)
 
                     # --- ③ City dropdowns (dependent on selected state) ---
                     elif field in ["CITY_OF_BIRTH", "RESIDENCIAL_CITY", "PROFESSIONAL_CITY"]:
@@ -269,10 +290,13 @@ def create_credit_application_form_m(custom_labels, field_options):
                         # Avoid passing None as a key to session_state.get and handle missing state_field gracefully
                         selected_state = st.session_state.get(state_field) if state_field is not None else None
                         if selected_state:
-                            filtered_cities = sorted(
-                                cities_df[cities_df["STATE"] == selected_state]["CITY"].unique()
-                            )
-                            form_data[field] = st.selectbox(label, filtered_cities, key=field)
+                            if cities_df is not None:
+                                filtered_cities = sorted(
+                                    cities_df[cities_df["STATE"] == selected_state]["CITY"].unique()
+                                )
+                                form_data[field] = st.selectbox(label, filtered_cities, key=field)
+                            else:
+                                form_data[field] = st.text_input(label, key=field)
                         else:
                             hint_field = state_field.replace('_', ' ').title() if state_field else "the corresponding state"
                             st.info(f"👆 Please select the corresponding state first ({hint_field}).")

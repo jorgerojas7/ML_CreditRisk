@@ -6,6 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel
 from typing import List, Dict, Any, Optional
+import uuid
 import logging
 import os
 from pathlib import Path
@@ -90,6 +91,14 @@ class SimulationResponse(BaseModel):
     simulation_results: Dict[str, Any]
     recommendations: List[str]
 
+# Modelos para autenticación simple (opcional)
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+class LoginResponse(BaseModel):
+    access_token: str
+
 # Variable global para el predictor
 predictor: Optional[CreditRiskPredictor] = None
 
@@ -132,6 +141,26 @@ async def startup_event():
         logger.info("Modelo cargado exitosamente al inicio")
     except Exception as e:
         logger.warning(f"No se pudo cargar el modelo al inicio: {e}")
+
+
+@app.post("/login", response_model=LoginResponse)
+async def login(request: LoginRequest):
+    """Autenticación básica para el frontend. Devuelve un token ficticio.
+
+    Nota: Esto es solo para demo. En producción, use un proveedor de identidad
+    o JWTs firmados y almacene usuarios/credenciales de forma segura.
+    """
+    # Usuarios de demostración
+    VALID_USERS = {
+        "admin": "admin123",
+        "analyst": "analyst456",
+    }
+
+    if VALID_USERS.get(request.username) == request.password:
+        # Generar un token simple (UUID) para la sesión
+        token = str(uuid.uuid4())
+        return LoginResponse(access_token=token)
+    raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
 @app.get("/")
 async def root():
@@ -279,8 +308,9 @@ async def simulate_credit_decisions(
         
         # Ejecutar simulación
         simulation_result = predictor.simulate_credit_decisions(
-            df, 
-            profit_margin=request.profit_margin
+            df,
+            profit_margin=request.profit_margin,
+            decision_threshold=request.decision_threshold if request.decision_threshold is not None else 0.5,
         )
         
         # Generar recomendaciones basadas en resultados
