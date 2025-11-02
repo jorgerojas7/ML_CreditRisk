@@ -35,6 +35,10 @@ MANIFEST
 # Jupyter Notebook
 .ipynb_checkpoints
 
+# Notebook outputs pesados (no versionar artefactos de entrenamiento)
+notebooks/catboost_info/
+**/events.out.tfevents
+
 # Data files (agregar excepciones específicas si es necesario)
 data/raw/*
 data/interim/*
@@ -50,6 +54,7 @@ models/*.pkl
 models/*.joblib
 models/*.h5
 models/*.pb
+models/*.json
 !models/.gitkeep
 
 # Logs
