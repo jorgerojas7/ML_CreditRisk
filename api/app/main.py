@@ -4,7 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.database import engine, Base
 from app.auth.routes import router as auth_router
-from app.examples.routes import router as predictions_router
+from app.predictions.routes import router as predictions_router
 
 Base.metadata.create_all(bind=engine)
 
