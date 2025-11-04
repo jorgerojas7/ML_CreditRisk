@@ -5,8 +5,7 @@ from app.users.models import UserRole
 
 class UserBase(BaseModel):
     email: EmailStr
-    username: str
-    full_name: Optional[str] = None
+    full_name: str
     role: UserRole = UserRole.CLIENT
 
 class UserCreate(UserBase):

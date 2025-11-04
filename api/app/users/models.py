@@ -4,7 +4,6 @@ from app.database import Base
 import enum
 
 class UserRole(str, enum.Enum):
-    """Roles de usuario"""
     BANK_AGENT = "bank_agent"
     CLIENT = "client"
 
@@ -13,9 +12,8 @@ class User(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     email = Column(String, unique=True, index=True, nullable=False)
-    username = Column(String, unique=True, index=True, nullable=False)
     hashed_password = Column(String, nullable=False)
-    full_name = Column(String)
+    full_name = Column(String, nullable=False)
     role = Column(SQLEnum(UserRole), nullable=False, default=UserRole.CLIENT)
     is_active = Column(SQLEnum("active", "inactive", name="user_status"), default="active")
     created_at = Column(DateTime(timezone=True), server_default=func.now())

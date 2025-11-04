@@ -9,10 +9,6 @@ class UserRepository:
         return db.query(User).filter(User.email == email).first()
     
     @staticmethod
-    def get_by_username(db: Session, username: str) -> Optional[User]:
-        return db.query(User).filter(User.username == username).first()
-    
-    @staticmethod
     def get_by_id(db: Session, user_id: int) -> Optional[User]:
         return db.query(User).filter(User.id == user_id).first()
     
@@ -20,7 +16,6 @@ class UserRepository:
     def create(db: Session, user_data: UserCreate, hashed_password: str) -> User:
         db_user = User(
             email=user_data.email,
-            username=user_data.username,
             hashed_password=hashed_password,
             full_name=user_data.full_name,
             role=user_data.role
