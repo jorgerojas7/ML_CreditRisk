@@ -32,7 +32,7 @@ services:
       - ./models:/app/models
       - ./data:/app/data
     healthcheck:
-      test: [ "CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/health')" ]
+      test: [ "CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/api/v1/health')" ]
       interval: 5s
       timeout: 5s
       retries: 10
