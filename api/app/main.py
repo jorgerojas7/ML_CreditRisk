@@ -27,13 +27,13 @@ app.add_middleware(
 app.include_router(auth_router, prefix=settings.API_V1_STR)
 app.include_router(predictions_router, prefix=settings.API_V1_STR)
 
-@app.get("/")
+@app.get(f"{settings.API_V1_STR}/")
 def root():
     return {
         "message": "Credit Prediction API",
         "version": "1.0.0",
     }
 
-@app.get("/health")
+@app.get(f"{settings.API_V1_STR}/health")
 def health_check():
     return {"status": "healthy"}
