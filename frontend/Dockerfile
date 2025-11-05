@@ -11,12 +11,11 @@ RUN apt-get update \
 
 WORKDIR /app
 
-COPY requirements.txt ./
+COPY requirements.txt .
 RUN pip install --upgrade pip \
     && pip install -r requirements.txt
 
-COPY frontend ./frontend
-COPY ml_creditrisk ./ml_creditrisk
+COPY . /app/frontend
 
 # Ensure imports find 'credit_form_interface' and project package
 ENV PYTHONPATH=/app:/app/frontend \

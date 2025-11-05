@@ -1,48 +1,69 @@
 services:
+  db:
+    image: postgres:15-alpine
+    container_name: credit_prediction_db
+    env_file:
+      - ./api/.env
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - mlcredit_net
+
   api:
     build:
-      context: .
-      dockerfile: api/Dockerfile
+      context: ./api
+      dockerfile: Dockerfile
     container_name: mlcredit_api
+    env_file:
+      - ./api/.env
     ports:
       - "8000:8000"
-    environment:
-      - API_HOST=0.0.0.0
-      - API_PORT=8000
-      - API_DEBUG=false
-      - PYTHONPATH=/app
-      - MODEL_PATH=/app/models/pipeline.joblib
+    depends_on:
+      db:
+        condition: service_healthy
     volumes:
       - ./models:/app/models
       - ./data:/app/data
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/health')"]
-      interval: 15s
+      test: [ "CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/health')" ]
+      interval: 5s
       timeout: 5s
       retries: 10
+    networks:
+      - mlcredit_net
 
   frontend:
     build:
-      context: .
-      dockerfile: frontend/Dockerfile
+      context: ./frontend
+      dockerfile: Dockerfile
     container_name: mlcredit_frontend
     ports:
       - "8501:8501"
     environment:
       - API_BASE_URL=http://api:8000
-      - USE_BACKEND=true
-      - PYTHONPATH=/app:/app/frontend
     volumes:
       - ./data:/app/data
     depends_on:
       api:
         condition: service_healthy
     healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8501')"]
+      test: [ "CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8501')" ]
       interval: 15s
       timeout: 5s
       retries: 10
+    networks:
+      - mlcredit_net
 
 networks:
-  default:
-    name: mlcredit_net
+  mlcredit_net:
+    driver: bridge
+
+volumes:
+  pgdata:
