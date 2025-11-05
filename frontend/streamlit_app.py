@@ -22,16 +22,7 @@ st.set_page_config(
     layout="wide",  # 👈 garantiza que ocupe todo el ancho
     initial_sidebar_state="expanded"
 )
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
-# ---------------------------------
-# SIMPLE LOGIN (FRONTEND VISUAL)
-# ---------------------------------
-API_BASE_URL = os.getenv("API_BASE_URL", API_BASE_URL)  # Acepta override por env
-USE_BACKEND = os.getenv("USE_BACKEND", "false").lower() == "true"  # Toggle por env
-
-"""
-Las variables API_BASE_URL y USE_BACKEND ya fueron definidas arriba con soporte de env.
-"""
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")  + "/api/v1"
 
 def login_ui():
     # --- Diseño centrado ---
@@ -51,45 +42,31 @@ def login_ui():
             unsafe_allow_html=True
         )
 
-        username = st.text_input("👤 Username")
+        email = st.text_input("👤 Email", placeholder="example@domain.com")
         password = st.text_input("🔑 Password", type="password")
 
-        # Usuarios locales para modo simulado
-        VALID_USERS = {"admin": "admin123", "analyst": "analyst456"}
-
         if st.button("Login", use_container_width=True):
-            if not username or not password:
-                st.warning("⚠️ Please enter both username and password.")
+            if not email or not password:
+                st.warning("⚠️ Please enter both email and password.")
                 st.stop()
 
-            # 🔹 Si el backend está activo, usa la API real
-            if USE_BACKEND:
-                try:
-                    response = requests.post(
-                        f"{API_BASE_URL}/login",
-                        json={"username": username, "password": password},
-                        timeout=5
-                    )
-                    if response.status_code == 200:
-                        token = response.json().get("access_token")
-                        st.session_state["token"] = token
-                        st.session_state["username"] = username
-                        st.success("✅ Login successful!")
-                        st.rerun()
-                    else:
-                        st.error("❌ Invalid credentials. Please try again.")
-                except Exception as e:
-                    st.error(f"🚨 Error connecting to authentication server: {e}")
-
-            # 🔹 Si el backend NO está activo, usa modo simulado
-            else:
-                if username in VALID_USERS and password == VALID_USERS[username]:
-                    st.session_state["token"] = "fake_token_for_testing"
-                    st.session_state["username"] = username
-                    st.success(f"✅ Welcome, {username}!")
+            try:
+                response = requests.post(
+                    f"{API_BASE_URL}/auth/login",
+                    json={"email": email, "password": password},
+                    timeout=5
+                )
+                if response.status_code == 200:
+                    token = response.json().get("access_token")
+                    role = response.json().get("role")
+                    st.session_state["token"] = token
+                    st.session_state["role"] = role
+                    st.success("✅ Login successful!")
                     st.rerun()
                 else:
                     st.error("❌ Invalid credentials. Please try again.")
+            except Exception as e:
+                st.error(f"🚨 Error connecting to authentication server: {e}")
 
 # --- Mostrar login si no hay sesión activa ---
 if "token" not in st.session_state:
@@ -131,7 +108,6 @@ st.markdown("""
 # ---------------------------------
 def check_api_health() -> bool:
     """Check API availability."""
-    return True  # Simula que la API está disponible
     try:
         response = requests.get(f"{API_BASE_URL}/health", timeout=5)
         return response.status_code == 200
@@ -293,7 +269,7 @@ def display_risk_result(prediction: Dict[str, Any]):
 # ---------------------------------
 def main():
     with st.sidebar:
-        st.markdown(f"👋 Logged in as: **{st.session_state.get('username', 'Guest')}**")
+        st.markdown(f"👋 Logged in as: **{st.session_state.get('role', 'Unknown')}**")
     if st.button("🚪 Logout"):
         st.session_state.clear()
         st.rerun()
