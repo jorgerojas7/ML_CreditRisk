@@ -6,7 +6,7 @@ from app.users.models import UserRole
 class UserBase(BaseModel):
     email: EmailStr
     full_name: str
-    role: UserRole = UserRole.CLIENT
+    role: UserRole = UserRole.BANK_AGENT
 
 class UserCreate(UserBase):
     password: str
