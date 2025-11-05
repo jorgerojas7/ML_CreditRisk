@@ -1,0 +1,78 @@
+{
+  "lgb": {
+    "best_params": {
+      "clf__scale_pos_weight": 1,
+      "clf__num_leaves": 31,
+      "clf__n_estimators": 800,
+      "clf__learning_rate": 0.01
+    },
+    "roc_auc": 0.5989040236667729,
+    "best_threshold_f1": 0.21420203778420216,
+    "classification_report": {
+      "0": {
+        "precision": 0.8276877761413843,
+        "recall": 0.3041125541125541,
+        "f1-score": 0.444796201028888,
+        "support": 7392.0
+      },
+      "1": {
+        "precision": 0.29379461834157056,
+        "recall": 0.8205521472392638,
+        "f1-score": 0.43267286696320256,
+        "support": 2608.0
+      },
+      "accuracy": 0.4388,
+      "macro avg": {
+        "precision": 0.5607411972414774,
+        "recall": 0.562332350675909,
+        "f1-score": 0.4387345339960453,
+        "support": 10000.0
+      },
+      "weighted avg": {
+        "precision": 0.6884484405871929,
+        "recall": 0.4388,
+        "f1-score": 0.4416344355045572,
+        "support": 10000.0
+      }
+    },
+    "shap": true
+  },
+  "xgb": {
+    "best_params": {
+      "clf__scale_pos_weight": 2.833988306335666,
+      "clf__n_estimators": 800,
+      "clf__max_depth": 3,
+      "clf__learning_rate": 0.01
+    },
+    "roc_auc": 0.5968902087815049,
+    "best_threshold_f1": 0.4414064288139343,
+    "classification_report": {
+      "0": {
+        "precision": 0.8247605533877261,
+        "recall": 0.3145292207792208,
+        "f1-score": 0.45539124473606896,
+        "support": 7392.0
+      },
+      "1": {
+        "precision": 0.29438796824954744,
+        "recall": 0.8105828220858896,
+        "f1-score": 0.431913372152416,
+        "support": 2608.0
+      },
+      "accuracy": 0.4439,
+      "macro avg": {
+        "precision": 0.5595742608186368,
+        "recall": 0.5625560214325552,
+        "f1-score": 0.44365230844424247,
+        "support": 10000.0
+      },
+      "weighted avg": {
+        "precision": 0.6864393831836891,
+        "recall": 0.4439,
+        "f1-score": 0.4492682155662523,
+        "support": 10000.0
+      }
+    },
+    "shap": false
+  }
+}

@@ -1,7 +1,5 @@
 # 🚀 Guía de Inicio Rápido - Credit Risk Analysis
 
-> ¿Solo quieres correr el flujo de modelado y scoring? Abre `notebooks/02_Feature_Engineering_Modelado.ipynb` y sigue las celdas en orden (agrupación → preprocesamiento → importancia → modelos → predicciones → histogramas). Flags útiles: `HPO_ENABLED=False` y `USE_TUNED_MODELS=False` por defecto para ejecuciones rápidas.
-
 ## 📋 Resumen del Sistema
 
 Este proyecto combina **FastAPI** para el backend y **Streamlit** para la interfaz de usuario, creando un sistema completo de análisis de riesgo crediticio.
@@ -279,22 +277,6 @@ pip cache purge
 - **API Docs**: http://localhost:8000/docs (cuando FastAPI esté ejecutándose)
 - **Streamlit Docs**: https://docs.streamlit.io/
 - **FastAPI Docs**: https://fastapi.tiangolo.com/
-
-## 💾 Guardar y usar el preprocesador (.joblib)
-
-En la última celda del notebook `02_Feature_Engineering_Modelado.ipynb` puedes entrenar el preprocesador activo y guardarlo como artefacto reutilizable:
-
-- Salida:
-  - `models/preprocessor_active_<timestamp>.joblib` (preprocesador ajustado)
-  - `models/preprocessor_active_<timestamp>.json` (metadatos)
-
-- Carga y uso básico (en Python):
-  - Carga el `.joblib` y usa `.transform(X)` sobre datos con el mismo esquema de columnas de entrenamiento.
-  - Si cambiaste los grupos (`df_groups_final`) o el umbral de importancia, vuelve a entrenar y guardar.
-
-- Versionado:
-  - Por defecto, `models/*.joblib` y `.json` están ignorados en `.gitignore`.
-  - Para versionar uno concreto, usa `git add -f` o ajusta `.gitignore`.
 
 ## 🤝 Contribución
 

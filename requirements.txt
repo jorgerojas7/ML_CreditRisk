@@ -1,41 +1,33 @@
-#############################################################
-# ML_CreditRisk - Requisitos de entorno (Python 3.10 recomendado)
-#############################################################
+# Core dependencies - INSTALADAS ✓
+pandas>=2.0.0
+numpy>=1.24.0
 
-# Núcleo científico
-pandas>=2.0,<3
-numpy>=1.24,<3
-scipy>=1.10
+# Visualización - INSTALADAS ✓
+plotly>=5.0.0
+xlrd>=2.0.1  # Soporte para archivos Excel .xls
 
-# Lectura de Excel (.XLS del dataset PAKDD)
-# Nota: xlrd>=2.0 eliminó soporte para .xls. Fijamos 1.2.0.
-xlrd==1.2.0
+# API - INSTALADAS ✓
+fastapi>=0.100.0
+uvicorn[standard]>=0.23.0
+pydantic>=2.0.0
 
-# Visualización
-matplotlib>=3.7
-seaborn>=0.12
-plotly>=5.0
+# Frontend - INSTALADAS ✓
+streamlit>=1.28.0
+requests>=2.31.0
 
-# ML clásico
-scikit-learn>=1.3,<1.6
-feature-engine>=1.6
-category-encoders>=2.6
+# Machine Learning básico (instalar cuando sea necesario)
+# scikit-learn>=1.3.0
+# joblib>=1.3.0
 
-# Gradient Boosting libraries
-xgboost>=1.7
-lightgbm>=4.0
-catboost>=1.2
+# Visualización adicional (instalar cuando sea necesario)
+# matplotlib>=3.7.0
+# seaborn>=0.12.0
 
-# Utilidades
-joblib>=1.3
-requests>=2.31
+# ML avanzado (instalar después según necesidades del proyecto)
+# lightgbm>=4.0.0
+# xgboost>=1.7.0
+# catboost>=1.2.0
 
-# API / Frontend (opcional para demo de servicio)
-fastapi>=0.100
-uvicorn[standard]>=0.23
-pydantic>=2.0
-streamlit>=1.28
-
-# Tests (opcional)
-pytest>=7.0
-httpx>=0.24
+# Testing (instalar cuando se necesite hacer tests)
+# pytest>=7.0.0
+# httpx>=0.24.0
