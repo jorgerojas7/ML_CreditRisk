@@ -401,8 +401,15 @@ def main():
         col1, col2, col3 = st.columns([1, 2, 1])
         with col2:
             if st.button("🔮 Predict Credit Risk", type="primary",use_container_width=True):
-                yn_fields = [k for k in profile_data.keys() if k.startswith("FLAG_")]
-                bad_flags = [f for f in yn_fields if str(profile_data.get(f, "")).upper() == "N"]
+                rejection_flags = [
+                        "FLAG_HOME_ADDRESS_DOCUMENT","FLAG_RG","FLAG_CPF","FLAG_INCOME_PROOF","FLAG_ACSP_RECORD"
+                        ]
+
+                # --- Identify bad flags (value N or 1) ---
+                bad_flags = [
+                    f for f in rejection_flags
+                    if str(profile_data.get(f, "")).strip().upper() in ["N", "1"]
+                ]
 
                 # Si hay FLAGs en N → perfil malo (score = 0)
                 if bad_flags:
