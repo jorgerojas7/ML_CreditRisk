@@ -24,7 +24,7 @@ st.set_page_config(
 )
 API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")  + "/api/v1"
 
-def login_ui():
+def login_ui(page_prefix):
     # --- Diseño centrado ---
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -42,8 +42,8 @@ def login_ui():
             unsafe_allow_html=True
         )
 
-        email = st.text_input("👤 Email", placeholder="example@domain.com")
-        password = st.text_input("🔑 Password", type="password")
+        email = st.text_input("👤 Email", placeholder="example@domain.com", key=f"{page_prefix}_email")
+        password = st.text_input("🔑 Password", type="password", key=f"{page_prefix}_password")
 
         if st.button("Login", use_container_width=True):
             if not email or not password:
@@ -68,14 +68,71 @@ def login_ui():
             except Exception as e:
                 st.error(f"🚨 Error connecting to authentication server: {e}")
 
-# --- Mostrar login si no hay sesión activa ---
+def signup_ui(page_prefix):
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("""
+        <div style="
+            background-color: #f8f9fa;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;">
+            <h2 style="color:#1f77b4;">🧾 Create New Account</h2>
+        </div>
+        """, unsafe_allow_html=True)
+
+        email = st.text_input("📧 Email", key=f"{page_prefix}_email")
+        full_name = st.text_input("🧍 Full Name", key=f"{page_prefix}_fullname")
+        password = st.text_input("🔑 Password", type="password", key=f"{page_prefix}_password")
+        confirm_password = st.text_input("🔁 Confirm Password", type="password", key=f"{page_prefix}_confirm")
+
+        if st.button("Create Account", use_container_width=True):
+            # --- Validaciones básicas ---
+            if not email or not full_name or not password or not confirm_password:
+                st.warning("⚠️ Please fill in all fields.")
+                st.stop()
+            if "@" not in email:
+                st.warning("⚠️ Please enter a valid email address.")
+                st.stop()
+            if password != confirm_password:
+                st.error("❌ Passwords do not match.")
+                st.stop()
+
+            try:
+                response = requests.post(
+                    f"{API_BASE_URL}/auth/signup",
+                    json={
+                        "email": email,
+                        "full_name": full_name,
+                        "password": password
+                    },
+                    timeout=5
+                )
+                if response.status_code in (200, 201):
+                    st.success("✅ Account created successfully! Please log in.")
+                    st.info("You can now return to the Login page.")
+                else:
+                    st.error(f"❌ Could not create account. Server says: {response.text}")
+            except Exception as e:
+                    st.error(f"🚨 Error connecting to backend: {e}")
+
+# ---------------------------------
+# NAVEGACIÓN Y CONTROL DE SESIÓN
+# ---------------------------------
 if "token" not in st.session_state:
-    login_ui()
-    st.stop()
+    # Mostrar solo login / signup mientras no haya sesión
+    page = st.sidebar.radio("Navigation", ["Login", "Sign up"])
+
+    if page == "Login":
+        login_ui(page)
+    elif page == "Sign up":
+        signup_ui(page)
+    st.stop()  # 👈 Detiene aquí, no ejecuta el resto del código
 
 
 # ---------------------------------
-# STYLES
+# STYLES    
 # ---------------------------------
 st.markdown("""
 <style>
