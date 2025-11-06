@@ -42,8 +42,8 @@ def login_ui(page_prefix):
             unsafe_allow_html=True
         )
 
-        email = st.text_input("👤 Email", placeholder="example@domain.com")
-        password = st.text_input("🔑 Password", type="password")
+        email = st.text_input("👤 Email", placeholder="example@domain.com", key=f"{page_prefix}_email")
+        password = st.text_input("🔑 Password", type="password", key=f"{page_prefix}_password")
 
         if st.button("Login", use_container_width=True):
             if not email or not password:
@@ -99,29 +99,23 @@ def signup_ui(page_prefix):
                 st.error("❌ Passwords do not match.")
                 st.stop()
 
-            # --- Crear cuenta ---
-            if USE_BACKEND:
-                try:
-                    response = requests.post(
-                        f"{API_BASE_URL}/register",
-                        json={
-                            "email": email,
-                            "full_name": full_name,
-                            "password": password
-                        },
-                        timeout=5
-                    )
-                    if response.status_code in (200, 201):
-                        st.success("✅ Account created successfully! Please log in.")
-                        st.info("You can now return to the Login page.")
-                    else:
-                        st.error(f"❌ Could not create account. Server says: {response.text}")
-                except Exception as e:
+            try:
+                response = requests.post(
+                    f"{API_BASE_URL}/auth/signup",
+                    json={
+                        "email": email,
+                        "full_name": full_name,
+                        "password": password
+                    },
+                    timeout=5
+                )
+                if response.status_code in (200, 201):
+                    st.success("✅ Account created successfully! Please log in.")
+                    st.info("You can now return to the Login page.")
+                else:
+                    st.error(f"❌ Could not create account. Server says: {response.text}")
+            except Exception as e:
                     st.error(f"🚨 Error connecting to backend: {e}")
-            else:
-                # --- Modo simulado ---
-                st.success(f"✅ (Simulated) Account created for '{full_name}' ({email}).")
-                st.info("You can now return to the Login page.")
 
 # ---------------------------------
 # NAVEGACIÓN Y CONTROL DE SESIÓN
@@ -138,7 +132,7 @@ if "token" not in st.session_state:
 
 
 # ---------------------------------
-# STYLES
+# STYLES    
 # ---------------------------------
 st.markdown("""
 <style>
