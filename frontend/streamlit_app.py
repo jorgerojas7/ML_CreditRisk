@@ -22,9 +22,15 @@ st.set_page_config(
     layout="wide",  # 👈 garantiza que ocupe todo el ancho
     initial_sidebar_state="expanded"
 )
-API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")  + "/api/v1"
+API_BASE_URL = os.getenv("API_BASE_URL", "http://localhost:8000")
+# ---------------------------------
+# SIMPLE LOGIN (FRONTEND VISUAL)
+# ---------------------------------
+API_BASE_URL = os.getenv("API_BASE_URL", API_BASE_URL)  # Acepta override por env
+USE_BACKEND = os.getenv("USE_BACKEND", "false").lower() == "true"  # Toggle por env
 
-def login_ui():
+
+def login_ui(page_prefix):
     # --- Diseño centrado ---
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
@@ -42,36 +48,117 @@ def login_ui():
             unsafe_allow_html=True
         )
 
-        email = st.text_input("👤 Email", placeholder="example@domain.com")
-        password = st.text_input("🔑 Password", type="password")
+        username = st.text_input("👤 Username", key=f"{page_prefix}_username")
+        password = st.text_input("🔑 Password", type="password", key=f"{page_prefix}_password")
+
+        # Usuarios locales para modo simulado
+        VALID_USERS = {"admin": "admin123", "analyst": "analyst456"}
 
         if st.button("Login", use_container_width=True):
-            if not email or not password:
-                st.warning("⚠️ Please enter both email and password.")
+            if not username or not password:
+                st.warning("⚠️ Please enter both username and password.")
                 st.stop()
 
-            try:
-                response = requests.post(
-                    f"{API_BASE_URL}/auth/login",
-                    json={"email": email, "password": password},
-                    timeout=5
-                )
-                if response.status_code == 200:
-                    token = response.json().get("access_token")
-                    role = response.json().get("role")
-                    st.session_state["token"] = token
-                    st.session_state["role"] = role
-                    st.success("✅ Login successful!")
+            # 🔹 Si el backend está activo, usa la API real
+            if USE_BACKEND:
+                try:
+                    response = requests.post(
+                        f"{API_BASE_URL}/login",
+                        json={"username": username, "password": password},
+                        timeout=5
+                    )
+                    if response.status_code == 200:
+                        token = response.json().get("access_token")
+                        st.session_state["token"] = token
+                        st.session_state["username"] = username
+                        st.success("✅ Login successful!")
+                        st.rerun()
+                    else:
+                        st.error("❌ Invalid credentials. Please try again.")
+                except Exception as e:
+                    st.error(f"🚨 Error connecting to authentication server: {e}")
+
+            # 🔹 Si el backend NO está activo, usa modo simulado
+            else:
+                if username in VALID_USERS and password == VALID_USERS[username]:
+                    st.session_state["token"] = "fake_token_for_testing"
+                    st.session_state["username"] = username
+                    st.success(f"✅ Welcome, {username}!")
                     st.rerun()
                 else:
                     st.error("❌ Invalid credentials. Please try again.")
-            except Exception as e:
-                st.error(f"🚨 Error connecting to authentication server: {e}")
 
-# --- Mostrar login si no hay sesión activa ---
+def signup_ui(page_prefix):
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        st.markdown("""
+        <div style="
+            background-color: #f8f9fa;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            text-align: center;">
+            <h2 style="color:#1f77b4;">🧾 Create New Account</h2>
+        </div>
+        """, unsafe_allow_html=True)
+
+        email = st.text_input("📧 Email", key=f"{page_prefix}_email")
+        full_name = st.text_input("🧍 Full Name", key=f"{page_prefix}_fullname")
+        password = st.text_input("🔑 Password", type="password", key=f"{page_prefix}_password")
+        confirm_password = st.text_input("🔁 Confirm Password", type="password", key=f"{page_prefix}_confirm")
+
+        if st.button("Create Account", use_container_width=True):
+            # --- Validaciones básicas ---
+            if not email or not full_name or not password or not confirm_password:
+                st.warning("⚠️ Please fill in all fields.")
+                st.stop()
+            if "@" not in email:
+                st.warning("⚠️ Please enter a valid email address.")
+                st.stop()
+            if password != confirm_password:
+                st.error("❌ Passwords do not match.")
+                st.stop()
+
+            # --- Crear cuenta ---
+            if USE_BACKEND:
+                try:
+                    response = requests.post(
+                        f"{API_BASE_URL}/register",
+                        json={
+                            "email": email,
+                            "full_name": full_name,
+                            "password": password
+                        },
+                        timeout=5
+                    )
+                    if response.status_code in (200, 201):
+                        st.success("✅ Account created successfully! Please log in.")
+                        st.info("You can now return to the Login page.")
+                    else:
+                        st.error(f"❌ Could not create account. Server says: {response.text}")
+                except Exception as e:
+                    st.error(f"🚨 Error connecting to backend: {e}")
+            else:
+                # --- Modo simulado ---
+                st.success(f"✅ (Simulated) Account created for '{full_name}' ({email}).")
+                st.info("You can now return to the Login page.")
+
+# ---------------------------------
+# NAVEGACIÓN Y CONTROL DE SESIÓN
+# ---------------------------------
 if "token" not in st.session_state:
-    login_ui()
-    st.stop()
+    # Mostrar solo login / signup mientras no haya sesión
+    page = st.sidebar.radio("Navigation", ["Login", "Sign up"])
+
+    if page == "Login":
+        login_ui(page)
+    elif page == "Sign up":
+        signup_ui(page)
+    st.stop()  # 👈 Detiene aquí, no ejecuta el resto del código
+
+else:
+    # Si ya hay sesión, mostrar la app principal
+    main()
 
 
 # ---------------------------------
@@ -108,6 +195,7 @@ st.markdown("""
 # ---------------------------------
 def check_api_health() -> bool:
     """Check API availability."""
+    return True  # Simula que la API está disponible
     try:
         response = requests.get(f"{API_BASE_URL}/health", timeout=5)
         return response.status_code == 200
@@ -269,7 +357,7 @@ def display_risk_result(prediction: Dict[str, Any]):
 # ---------------------------------
 def main():
     with st.sidebar:
-        st.markdown(f"👋 Logged in as: **{st.session_state.get('role', 'Unknown')}**")
+        st.markdown(f"👋 Logged in as: **{st.session_state.get('username', 'Guest')}**")
     if st.button("🚪 Logout"):
         st.session_state.clear()
         st.rerun()
