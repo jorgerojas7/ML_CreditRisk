@@ -39,6 +39,18 @@ services:
     networks:
       - mlcredit_net
 
+  ml_model:
+    build:
+      context: ./models
+      dockerfile: Dockerfile
+    container_name: ml_model_service
+    ports:
+      - "8002:8002"
+    env_file:
+      - ./models/.env
+    networks:
+      - mlcredit_net
+
   frontend:
     build:
       context: ./frontend
