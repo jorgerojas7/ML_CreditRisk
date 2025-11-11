@@ -1,37 +1,40 @@
-from fastapi import APIRouter, Depends
-from app.auth.dependencies import (
-    require_bank_agent,
-    require_client,
-    require_any_role,
-)
+from fastapi import APIRouter, Depends, HTTPException
+from app.auth.dependencies import require_client
 from app.users.models import User
+import httpx
 
-router = APIRouter(prefix="/predictions", tags=["Examples - Protected Routes"])
+router = APIRouter(prefix="/predictions", tags=["Predictions"])
 
-@router.get("/public")
-def public_endpoint():
-    return {
-        "message": "This is a public endpoint accessible to everyone.",
-        "access": "Public"
-    }
+MODEL_SERVICE_URL = "http://ml_model:8002"
 
-@router.get("/bank-agent-only")
-def bank_agent_only_endpoint(current_user: User = Depends(require_bank_agent)):
-    return {
-        "message": f"Welcome {current_user.full_name}",
-        "access": "Bank Agents Only",
-    }
+@router.post("/predict-one")
+async def predict_one(
+    payload: dict,
+    current_user: User = Depends(require_client),
+):
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(f"{MODEL_SERVICE_URL}/predict", json=payload)
+            response.raise_for_status()
+        except httpx.RequestError as e:
+            raise HTTPException(status_code=503, detail=f"Error calling model service: {e}")
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=response.status_code, detail=f"Error calling model service: {response.text}")
 
-@router.get("/client-only")
-def client_only_endpoint(current_user: User = Depends(require_client)):
-    return {
-        "message": f"Hello {current_user.full_name}",
-        "access": "Clients Only",
-    }
+    return response.json()
 
-@router.get("/authenticated-users")
-def authenticated_users_endpoint(current_user: User = Depends(require_any_role)):
-    return {
-        "message": f"Hi {current_user.full_name}",
-        "access": "Authenticated Users",
-    }
+@router.post("/predict-batch")
+async def predict_batch(
+    payload: dict,
+    current_user: User = Depends(require_client),
+):
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.post(f"{MODEL_SERVICE_URL}/predict-batch", json=payload)
+            response.raise_for_status()
+        except httpx.RequestError as e:
+            raise HTTPException(status_code=503, detail=f"Error calling model service: {e}")
+        except httpx.HTTPStatusError as e:
+            raise HTTPException(status_code=response.status_code, detail=f"Error calling model service: {response.text}")
+
+    return response.json()

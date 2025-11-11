@@ -41,13 +41,13 @@ services:
 
   ml_model:
     build:
-      context: ./models
+      context: ./model_service
       dockerfile: Dockerfile
     container_name: ml_model_service
     ports:
       - "8002:8002"
     env_file:
-      - ./models/.env
+      - ./model_service/.env
     networks:
       - mlcredit_net
 
