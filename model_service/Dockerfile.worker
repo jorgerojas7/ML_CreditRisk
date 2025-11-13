@@ -1,0 +1,13 @@
+FROM python:3.10-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY ./app /app/app
+COPY ./train_dummy_model.py /app/train_dummy_model.py
+
+RUN python train_dummy_model.py
+
+CMD ["python", "-m", "app.worker"]
