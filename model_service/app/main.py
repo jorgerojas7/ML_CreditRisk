@@ -31,7 +31,7 @@ def startup_event():
 @app.post("/predict")
 def enqueue_prediction(request: PredictionRequest):
     try:
-        job = queue.enqueue("app.worker.predict_one_task", request.dict())
+        job = queue.enqueue("app.worker.predict_one_task", request.features)
         return {"job_id": job.get_id(), "status": job.get_status()}
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -39,7 +39,7 @@ def enqueue_prediction(request: PredictionRequest):
 @app.post("/predict-batch")
 def enqueue_batch_prediction(request: BatchPredictionRequest):
     try:
-        data = [item.dict() for item in request.data]
+        data = [item.dict() for item in request.features]
         job = queue.enqueue("app.worker.predict_batch_task", data)
         return {"job_id": job.get_id(), "status": job.get_status()}
     except Exception as e:

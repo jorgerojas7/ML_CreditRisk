@@ -1,10 +1,8 @@
-from pydantic import BaseModel, Field
-from typing import List
+from pydantic import BaseModel
+from typing import List, Dict, Any
 
 class PredictionRequest(BaseModel):
-    age: float = Field(..., example=30)
-    income: float = Field(..., example=25000)
-    loan_amount: float = Field(..., example=5000)
+    features: Dict[str, Any]
 
 class BatchPredictionRequest(BaseModel):
-    data: List[PredictionRequest]
+    features: List[Dict[str, Any]]
