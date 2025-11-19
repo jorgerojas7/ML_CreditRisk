@@ -1,12 +1,8 @@
-import pandas as pd
+import json
+import os
 
-def preprocess_features(data):
-    df = pd.DataFrame(data)
+BASE_DIR = "/app/artifacts"
+EXPECTED_COLS_PATH = os.path.join(BASE_DIR, "expected_columns.json")
 
-    expected_cols = ["age", "income", "loan_amount"]
-    for col in expected_cols:
-        if col not in df.columns:
-            df[col] = 0
-
-    df = df.fillna(0)
-    return df[expected_cols]
+with open(EXPECTED_COLS_PATH) as f:
+    EXPECTED_COLS = list(json.load(f).keys())
